@@ -8,6 +8,9 @@ inputs:
   backlog-host:
     description: 'Backlog hostname (e.g. your-org.backlog.com")'
     required: true
+  secret:
+    description: 'GitHub Secret'
+    required: true
 runs:
   using: 'node12'
   main: 'dist/index.js'

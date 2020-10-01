@@ -1,5 +1,5 @@
 import * as core from '@actions/core'
-import { context } from '@actions/github'
+import { context, getOctokit } from '@actions/github'
 import { Client, CustomField } from './client'
 
 async function main () {
@@ -44,6 +44,13 @@ async function main () {
 
     {
       core.info(`Trying to link the PR Status to ${backlogUrl}`)
+      const octoKit = getOctokit(core.getInput("secret"))
+
+      const pr = await octoKit.pulls.get({
+        ...context.repo,
+        pull_number: context.payload.pull_request.number,
+      });
+      const status = pr.data.merged ? "merged" : pr.data.state
 
       const prStatusCustomField: CustomField | undefined = await client.getPrStatusCustomField(projectId)
       if (prStatusCustomField === undefined) {
@@ -51,8 +58,8 @@ async function main () {
         return
       }
 
-      if (await client.updateIssuePrStatusField(issueId, prStatusCustomField.id, prUrl)) {
-        core.info(`PR Status (${prUrl}) has been successfully linked.`)
+      if (await client.updateIssuePrStatusField(issueId, prStatusCustomField.id, status)) {
+        core.info(`PR Status (${status}) has been successfully linked.`)
       }
     }
   } catch (error) {
