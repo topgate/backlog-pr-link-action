@@ -11569,6 +11569,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 const PR_FIELD_NAME = 'Pull Request';
+const PR_STATUS_FIELD_NAME = 'PR Status';
 class client_Client {
     constructor(host, apiKey) {
         this.host = host;
@@ -11602,6 +11603,13 @@ class client_Client {
             return prField;
         });
     }
+    getPrStatusCustomField(projectId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const fields = yield this.backlog.getCustomFields(projectId);
+            const prField = fields.find((field) => field.name === PR_STATUS_FIELD_NAME);
+            return prField;
+        });
+    }
     updateIssuePrField(issueId, prFieldId, prUrl) {
         return __awaiter(this, void 0, void 0, function* () {
             let currentPrField;
@@ -11632,11 +11640,45 @@ class client_Client {
             }
         });
     }
+    updateIssuePrStatusField(issueId, prStatusFieldId, prStatus) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let currentPrStatusField;
+            try {
+                currentPrStatusField = yield this.getCurrentPrField(issueId, prStatusFieldId);
+            }
+            catch (error) {
+                Object(core.error)(error.message);
+                Object(core.warning)(`Invalid IssueID: ${issueId}`);
+                return false;
+            }
+            if (currentPrStatusField.value === prStatus) {
+                Object(core.info)(`PR Status(${prStatus}) is already linked.`);
+                return false;
+            }
+            try {
+                yield this.backlog.patchIssue(issueId, {
+                    [`customField_${currentPrStatusField.id}`]: prStatus
+                });
+                return true;
+            }
+            catch (error) {
+                Object(core.error)(error.message);
+                return false;
+            }
+        });
+    }
     getCurrentPrField(issueId, prFieldId) {
         return __awaiter(this, void 0, void 0, function* () {
             const issue = yield this.backlog.getIssue(issueId);
             const prField = issue.customFields.find((field) => field.id === prFieldId);
             return prField;
+        });
+    }
+    getCurrentPrStatusField(issueId, prStatusFieldId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const issue = yield this.backlog.getIssue(issueId);
+            const prStatusField = issue.customFields.find((field) => field.id === prStatusFieldId);
+            return prStatusField;
         });
     }
     get urlRegex() {
@@ -11680,14 +11722,30 @@ function main() {
                 Object(core.warning)(`Invalid ProjectID: ${projectId}`);
                 return;
             }
-            Object(core.info)(`Trying to link the Pull Request to ${backlogUrl}`);
-            const prCustomField = yield client.getPrCustomField(projectId);
-            if (prCustomField === undefined) {
-                Object(core.warning)('Skip process since "Pull Request" custom field not found');
-                return;
+            {
+                Object(core.info)(`Trying to link the Pull Request to ${backlogUrl}`);
+                const prCustomField = yield client.getPrCustomField(projectId);
+                if (prCustomField === undefined) {
+                    Object(core.warning)('Skip process since "Pull Request" custom field not found');
+                    return;
+                }
+                if (yield client.updateIssuePrField(issueId, prCustomField.id, prUrl)) {
+                    Object(core.info)(`Pull Request (${prUrl}) has been successfully linked.`);
+                }
             }
-            if (yield client.updateIssuePrField(issueId, prCustomField.id, prUrl)) {
-                Object(core.info)(`Pull Request (${prUrl}) has been successfully linked.`);
+            {
+                Object(core.info)(`Trying to link the PR Status to ${backlogUrl}`);
+                const octoKit = Object(github.getOctokit)(Object(core.getInput)("secret"));
+                const pr = yield octoKit.pulls.get(Object.assign(Object.assign({}, github.context.repo), { pull_number: github.context.payload.pull_request.number }));
+                const status = pr.data.merged ? "merged" : pr.data.state;
+                const prStatusCustomField = yield client.getPrStatusCustomField(projectId);
+                if (prStatusCustomField === undefined) {
+                    Object(core.warning)('Skip process since "PR Status" custom field not found');
+                    return;
+                }
+                if (yield client.updateIssuePrStatusField(issueId, prStatusCustomField.id, status)) {
+                    Object(core.info)(`PR Status (${status}) has been successfully linked.`);
+                }
             }
         }
         catch (error) {
