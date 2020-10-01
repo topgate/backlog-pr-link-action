@@ -27,16 +27,33 @@ async function main () {
       core.warning(`Invalid ProjectID: ${projectId}`)
       return
     }
-    core.info(`Trying to link the Pull Request to ${backlogUrl}`)
 
-    const prCustomField: CustomField | undefined = await client.getPrCustomField(projectId)
-    if (prCustomField === undefined) {
-      core.warning('Skip process since "Pull Request" custom field not found')
-      return
+    {
+      core.info(`Trying to link the Pull Request to ${backlogUrl}`)
+
+      const prCustomField: CustomField | undefined = await client.getPrCustomField(projectId)
+      if (prCustomField === undefined) {
+        core.warning('Skip process since "Pull Request" custom field not found')
+        return
+      }
+
+      if (await client.updateIssuePrField(issueId, prCustomField.id, prUrl)) {
+        core.info(`Pull Request (${prUrl}) has been successfully linked.`)
+      }
     }
 
-    if (await client.updateIssuePrField(issueId, prCustomField.id, prUrl)) {
-      core.info(`Pull Request (${prUrl}) has been successfully linked.`)
+    {
+      core.info(`Trying to link the PR Status to ${backlogUrl}`)
+
+      const prStatusCustomField: CustomField | undefined = await client.getPrStatusCustomField(projectId)
+      if (prStatusCustomField === undefined) {
+        core.warning('Skip process since "PR Status" custom field not found')
+        return
+      }
+
+      if (await client.updateIssuePrStatusField(issueId, prStatusCustomField.id, prUrl)) {
+        core.info(`PR Status (${prUrl}) has been successfully linked.`)
+      }
     }
   } catch (error) {
     core.setFailed(error.message)

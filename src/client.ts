@@ -4,6 +4,7 @@ import 'isomorphic-form-data'
 import { Backlog } from 'backlog-js'
 
 const PR_FIELD_NAME = 'Pull Request'
+const PR_STATUS_FIELD_NAME = 'PR Status'
 
 export interface CustomField {
   id: number;
@@ -51,6 +52,16 @@ export class Client {
     return prField
   }
 
+  async getPrStatusCustomField (projectId: string): Promise<CustomField | undefined> {
+    const fields: Array<CustomField> = await this.backlog.getCustomFields(
+      projectId
+    )
+    const prField: CustomField | undefined = fields.find(
+      (field: CustomField) => field.name === PR_STATUS_FIELD_NAME
+    )
+    return prField
+  }
+
   async updateIssuePrField (
     issueId: string,
     prFieldId: number,
@@ -85,6 +96,38 @@ export class Client {
     }
   }
 
+  async updateIssuePrStatusField (
+    issueId: string,
+    prStatusFieldId: number,
+    prStatus: string
+  ): Promise<boolean> {
+    let currentPrStatusField: CustomField
+
+    try {
+      currentPrStatusField = await this.getCurrentPrField(issueId, prStatusFieldId)
+    } catch (error) {
+      core.error(error.message)
+      core.warning(`Invalid IssueID: ${issueId}`)
+      return false
+    }
+
+    if (currentPrStatusField.value === prStatus) {
+      core.info(`PR Status(${prStatus}) is already linked.`)
+      return false
+    }
+
+    try {
+      await this.backlog.patchIssue(issueId, {
+        [`customField_${currentPrStatusField.id}`]: prStatus
+      })
+      return true
+    } catch (error) {
+      core.error(error.message)
+      return false
+    }
+  }
+
+
   async getCurrentPrField (
     issueId: string,
     prFieldId: number
@@ -94,6 +137,17 @@ export class Client {
       (field: CustomField) => field.id === prFieldId
     )
     return prField
+  }
+
+  async getCurrentPrStatusField (
+    issueId: string,
+    prStatusFieldId: number
+  ): Promise<CustomField> {
+    const issue = await this.backlog.getIssue(issueId)
+    const prStatusField: CustomField = issue.customFields.find(
+      (field: CustomField) => field.id === prStatusFieldId
+    )
+    return prStatusField
   }
 
   private get urlRegex (): RegExp {
