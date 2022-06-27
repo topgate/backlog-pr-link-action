@@ -42,6 +42,15 @@ export class Client {
     }
   }
 
+  async getOrCreatePrCustomField (projectId: string): Promise<CustomField> {
+    const field = await this.getPrCustomField(projectId)
+    if (field) {
+      return field
+    }
+
+    return await this.setPrCustomField(projectId)
+  }
+
   async getPrCustomField (projectId: string): Promise<CustomField | undefined> {
     const fields: Array<CustomField> = await this.backlog.getCustomFields(
       projectId
@@ -52,6 +61,24 @@ export class Client {
     return prField
   }
 
+  async setPrCustomField (projectId: string): Promise<CustomField> {
+    const created = await this.backlog.postCustomField(projectId, {
+      name: PR_FIELD_NAME,
+      typeId: 1, // text
+      description: 'Filed for Pull request URL.'
+    })
+    return created as CustomField
+  }
+
+  async getOrCreatePrStatusCustomField (projectId: string): Promise<CustomField> {
+    const field = await this.getPrStatusCustomField(projectId)
+    if (field) {
+      return field
+    }
+
+    return await this.setPrStatusCustomField(projectId)
+  }
+
   async getPrStatusCustomField (projectId: string): Promise<CustomField | undefined> {
     const fields: Array<CustomField> = await this.backlog.getCustomFields(
       projectId
@@ -60,6 +87,15 @@ export class Client {
       (field: CustomField) => field.name === PR_STATUS_FIELD_NAME
     )
     return prField
+  }
+
+  async setPrStatusCustomField (projectId: string): Promise<CustomField> {
+    const created = await this.backlog.postCustomField(projectId, {
+      name: PR_STATUS_FIELD_NAME,
+      typeId: 1, // text
+      description: 'Filed for Pull request status.'
+    })
+    return created as CustomField
   }
 
   async updateIssuePrField (
@@ -126,7 +162,6 @@ export class Client {
       return false
     }
   }
-
 
   async getCurrentPrField (
     issueId: string,
