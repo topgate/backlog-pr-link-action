@@ -31,7 +31,7 @@ async function main () {
     {
       core.info(`Trying to link the Pull Request to ${backlogUrl}`)
 
-      const prCustomField: CustomField | undefined = await client.getPrCustomField(projectId)
+      const prCustomField: CustomField | undefined = await client.getOrCreatePrCustomField(projectId)
       if (prCustomField === undefined) {
         core.warning('Skip process since "Pull Request" custom field not found')
         return
@@ -52,7 +52,7 @@ async function main () {
       });
       const status = pr.data.merged ? "merged" : pr.data.state
 
-      const prStatusCustomField: CustomField | undefined = await client.getPrStatusCustomField(projectId)
+      const prStatusCustomField: CustomField | undefined = await client.getOrCreatePrStatusCustomField(projectId)
       if (prStatusCustomField === undefined) {
         core.warning('Skip process since "PR Status" custom field not found')
         return
