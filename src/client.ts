@@ -42,15 +42,6 @@ export class Client {
     }
   }
 
-  async getOrCreatePrCustomField (projectId: string): Promise<CustomField> {
-    const field = await this.getPrCustomField(projectId)
-    if (field) {
-      return field
-    }
-
-    return await this.setPrCustomField(projectId)
-  }
-
   async getPrCustomField (projectId: string): Promise<CustomField | undefined> {
     const fields: Array<CustomField> = await this.backlog.getCustomFields(
       projectId
@@ -68,15 +59,6 @@ export class Client {
       description: 'Filed for Pull request URL.'
     })
     return created as CustomField
-  }
-
-  async getOrCreatePrStatusCustomField (projectId: string): Promise<CustomField> {
-    const field = await this.getPrStatusCustomField(projectId)
-    if (field) {
-      return field
-    }
-
-    return await this.setPrStatusCustomField(projectId)
   }
 
   async getPrStatusCustomField (projectId: string): Promise<CustomField | undefined> {
