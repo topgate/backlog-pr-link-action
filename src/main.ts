@@ -66,9 +66,6 @@ async function main () {
         }
       }
 
-        return
-      }
-
       if (await client.updateIssuePrStatusField(issueId, prStatusCustomField.id, status)) {
         core.info(`PR Status (${status}) has been successfully linked.`)
       }
