@@ -31,10 +31,14 @@ async function main () {
     {
       core.info(`Trying to link the Pull Request to ${backlogUrl}`)
 
-      const prCustomField: CustomField | undefined = await client.getOrCreatePrCustomField(projectId)
+      let prCustomField: CustomField | undefined = await client.getPrCustomField(projectId)
       if (prCustomField === undefined) {
-        core.warning('Skip process since "Pull Request" custom field not found')
-        return
+        core.info('Create pr custom filed "Pull Request"')
+        prCustomField = await client.setPrCustomField(projectId)
+        if (!prCustomField) {
+          core.warning('Skip process since "Pull Request" custom field not found')
+          return
+        }
       }
 
       if (await client.updateIssuePrField(issueId, prCustomField.id, prUrl)) {
@@ -44,17 +48,24 @@ async function main () {
 
     {
       core.info(`Trying to link the PR Status to ${backlogUrl}`)
-      const octoKit = getOctokit(core.getInput("secret"))
+      const octoKit = getOctokit(core.getInput('secret'))
 
       const pr = await octoKit.pulls.get({
         ...context.repo,
-        pull_number: context.payload.pull_request.number,
-      });
-      const status = pr.data.merged ? "merged" : pr.data.state
+        pull_number: context.payload.pull_request.number
+      })
+      const status = pr.data.merged ? 'merged' : pr.data.state
 
-      const prStatusCustomField: CustomField | undefined = await client.getOrCreatePrStatusCustomField(projectId)
+      let prStatusCustomField: CustomField | undefined = await client.getPrStatusCustomField(projectId)
       if (prStatusCustomField === undefined) {
-        core.warning('Skip process since "PR Status" custom field not found')
+        core.info('Create pr custom filed "PR Status"')
+        prStatusCustomField = await client.setPrStatusCustomField(projectId)
+        if (!prStatusCustomField) {
+          core.warning('Skip process since "PR Status" custom field not found')
+          return
+        }
+      }
+
         return
       }
 
